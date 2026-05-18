@@ -14,6 +14,7 @@ type Config struct {
 	DBDATABASE    string `mapstructure:"DB_DATABASE"`
 	MIGRATIONSURL string `mapstructure:"MIGRATION_URL"`
 	JWTTOKEN      string `mapstructure:"JWTTOKEN"`
+	BASEURL       string `mapstructure:"BASEURL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

@@ -20,6 +20,7 @@ func main(){
 	//----------------------------------------------
 	// setup logger 
 	logger , _ := zap.NewProduction()
+	defer logger.Sync()
 	logger.Info("starting server",zap.String("app", config.APPNAME))
 
 	//---------------------------------------------------------
@@ -36,7 +37,7 @@ func main(){
 	}
 	//----------------------------------------------
 	// setup router and start server
-	router := routers.AuthRoutersSetup()
+	router := routers.RoutersSetup()
 	portAddress := ":"+config.APPPORT
 	logger.Info("server running",zap.String("address",portAddress))
 	if err := router.Run(portAddress);err != nil {

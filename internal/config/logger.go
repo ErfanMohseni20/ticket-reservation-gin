@@ -23,6 +23,7 @@ func SetupLogger(appName, logPath string, debug bool) (*zap.Logger, error) {
 		LocalTime:  true, 
 	}
 
+	
 	logLevel := zap.NewAtomicLevel()
 	if debug {
 		logLevel.SetLevel(zap.DebugLevel)

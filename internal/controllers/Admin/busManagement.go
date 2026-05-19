@@ -99,6 +99,17 @@ func BusCreate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create new bus "})
 		return
 	}
+	for i := 1; i <= bus.Capacity; i++ {
+		busSeat := models.BusSeat{
+			BusID:      bus.ID,
+			SeatNumber: i,
+			Status:     "available",
+		}
+		if err := database.DB.Create(&busSeat).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create seats for bus"})
+			return
+		}
+	}
 	c.JSON(http.StatusCreated, gin.H{"message": "bus created successfully"})
 }
 func BusShow(c *gin.Context) {
@@ -212,4 +223,27 @@ func BusDelete(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "bus deleted successfully"})
+}
+func UpdateBusSeatStatus(c *gin.Context) {
+	var UpdateBusSeatStatusRequest request.UpdateBusSeatStatusRequest
+	if err := c.ShouldBindJSON(&UpdateBusSeatStatusRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"meesage": err.Error()})
+		return
+	}
+	var bus models.Bus
+	if err := database.DB.First(&bus, UpdateBusSeatStatusRequest.BusID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("bus id %v not found", UpdateBusSeatStatusRequest.BusID)})
+		return
+	}
+	var busSeat models.BusSeat
+	if err := database.DB.Model(&busSeat).Where("id = ? and bus_id = ?", UpdateBusSeatStatusRequest.SeatID, UpdateBusSeatStatusRequest.BusID).First(&busSeat).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("bus id %v haven't seat id %v", UpdateBusSeatStatusRequest.BusID, UpdateBusSeatStatusRequest.SeatID)})
+		return
+	}
+	busSeat.Status=UpdateBusSeatStatusRequest.Status
+	if err := database.DB.Save(&busSeat).Error;err != nil {
+		c.JSON(http.StatusInternalServerError,gin.H{"message" : "failed to update bus seat status"})
+		return
+	}
+	c.JSON(http.StatusOK,gin.H{"message" : "seat updated successfully"})
 }

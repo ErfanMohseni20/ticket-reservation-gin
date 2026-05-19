@@ -69,6 +69,7 @@ func RoutersSetup() *gin.Engine {
 				adminBusManagement.GET("/:id", adminController.BusShow)
 				adminBusManagement.PUT("/:id", adminController.BusUpdate)
 				adminBusManagement.DELETE("/:id", adminController.BusDelete)
+				adminBusManagement.POST("/update_seat",adminController.UpdateBusSeatStatus)
 			}
 			adminTicketManagement := admin.Group("/tickets")
 			{

@@ -23,6 +23,7 @@ type Bus struct {
 	Corporation       *string   `gorm:"type:varchar(255)"`
 	SuperCorporation  *string   `gorm:"type:varchar(255)"`
 	ServiceNumber     *string   `gorm:"type:varchar(255)"`
-	IsVIP             bool      `gorm:"default:false"`
 	Route             Route     `gorm:"foreignKey:RouteID"`
+	IsVIP            bool       `gorm:"column:is_vip;default:false"`
+
 }

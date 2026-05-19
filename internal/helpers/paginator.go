@@ -5,7 +5,7 @@ import (
 	// "strconv"
 )
 
-func GetTotalCount(model interface{}) int64 {
+func GetTotalCount(model interface{}) (int64) {
 	var total int64
 	database.DB.Model(&model).Count(&total)
 	return total

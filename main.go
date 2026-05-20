@@ -5,6 +5,7 @@ import (
 
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/config"
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/database"
+	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/database/migrations"
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/helpers"
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/models"
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/routers"
@@ -28,8 +29,17 @@ func main(){
 	if err := database.Connect(config); err != nil {
 		logger.Fatal("DB Connection failed",zap.Error(err))
 	}
-	database.DB.AutoMigrate(&models.User{},&models.Bus{},&models.BusSeat{},&models.City{},&models.Route{},&models.SeatReservation{},&models.Terminal{})
-	logger.Info("migrations completed")
+	if database.DB != nil {
+		if err := migrations.AddSenderIdToTicketReplies(database.DB);err != nil {
+			logger.Fatal("failed to run migration",zap.Error(err))
+		}
+		if err := database.DB.AutoMigrate(&models.User{},&models.Bus{},&models.BusSeat{},&models.City{},&models.Route{},&models.SeatReservation{},&models.Terminal{},&models.Ticket{},&models.TicketReply{}); err != nil {
+			logger.Fatal("auto migrate failed",zap.Error(err))
+		}
+		logger.Info("migrations completed")
+	} else {
+		logger.Info("DB connection established but no SQL DB detected; skipping SQL migrations")
+	}
 	//----------------------------------------
 	helpers.JWTSecret = []byte(config.JWTTOKEN)
 	if len(helpers.JWTSecret) < 32 {

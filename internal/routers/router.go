@@ -27,6 +27,13 @@ func RoutersSetup() *gin.Engine {
 			customer.GET("/profile", customerController.Profile)
 			customer.PUT("/profile", customerController.UpdateProfile)
 		}
+		customerTicketManagment := customer.Group("/ticket")
+		{
+			customerTicketManagment.POST("", customerController.TicketCreate)
+			customerTicketManagment.GET("", customerController.TicketList)
+			customerTicketManagment.GET("/:id", customerController.TicketShow)
+			customerTicketManagment.POST("/:id/reply", customerController.TicketReply)
+		}
 		admin := apiRouter.Group("/admin")
 		// admin.Use(middleware.AuthMiddleware())
 		{
@@ -69,12 +76,14 @@ func RoutersSetup() *gin.Engine {
 				adminBusManagement.GET("/:id", adminController.BusShow)
 				adminBusManagement.PUT("/:id", adminController.BusUpdate)
 				adminBusManagement.DELETE("/:id", adminController.BusDelete)
-				adminBusManagement.POST("/update_seat",adminController.UpdateBusSeatStatus)
+				adminBusManagement.POST("/update_seat", adminController.UpdateBusSeatStatus)
 			}
 			adminTicketManagement := admin.Group("/tickets")
 			{
 				adminTicketManagement.GET("", adminController.TicketList)
-
+				adminTicketManagement.GET("/:id", adminController.TicketShow)
+				adminTicketManagement.POST("/:id/close", adminController.TicketClose)
+				adminTicketManagement.POST("/:id/reply", adminController.TicketReply)
 			}
 		}
 	}

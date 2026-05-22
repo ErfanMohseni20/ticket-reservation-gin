@@ -2,16 +2,6 @@ package models
 
 import "time"
 
-type Route struct {
-	ID                    uint     `gorm:"primaryKey"`
-	OriginTerminalID      uint     `gorm:"not null;index"`
-	DestinationTerminalID uint     `gorm:"not null;index"`
-	Duration              string   `gorm:"type:interval;not null"`
-	Distance              int      `gorm:"not null;check:distance > 0"`
-	OriginTerminal        Terminal `gorm:"foreignKey:OriginTerminalID"`
-	DestinationTerminal   Terminal `gorm:"foreignKey:DestinationTerminalID"`
-}
-
 type Bus struct {
 	ID               uint      `gorm:"primaryKey"`
 	RouteID          uint      `gorm:"not null;index"`

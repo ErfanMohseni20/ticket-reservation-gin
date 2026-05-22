@@ -25,23 +25,25 @@ func RoutersSetup() *gin.Engine {
 		customer := apiRouter.Group("/customer")
 		customer.Use(middleware.AuthMiddleware())
 		{
-			customer.GET("/profile", customerController.Profile)
-			customer.PUT("/profile", customerController.UpdateProfile)
-		}
-		customerTicketManagment := customer.Group("/ticket")
-		{
-			customerTicketManagment.POST("", customerController.TicketCreate)
-			customerTicketManagment.GET("", customerController.TicketList)
-			customerTicketManagment.GET("/:id", customerController.TicketShow)
-			customerTicketManagment.POST("/:id/reply", customerController.TicketReply)
-		}
-		customerReservationManagement := customer.Group("/reserve")
-		{
+			{
+				customer.GET("/profile", customerController.Profile)
+				customer.PUT("/profile", customerController.UpdateProfile)
+			}
+			customerTicketManagment := customer.Group("/ticket")
+			{
+				customerTicketManagment.POST("", customerController.TicketCreate)
+				customerTicketManagment.GET("", customerController.TicketList)
+				customerTicketManagment.GET("/:id", customerController.TicketShow)
+				customerTicketManagment.POST("/:id/reply", customerController.TicketReply)
+			}
+			customerReservationManagement := customer.Group("/reserve")
+			{
 
-			customerReservationManagement.POST("/seat",customerController.ReserveSeat)
-			customerReservationManagement.GET("/list",customerController.MyReserveList)
-			customerReservationManagement.PUT("/change_status",customerController.ChnageStatus)
-			customerReservationManagement.GET("/history",customerController.History)
+				customerReservationManagement.POST("/seat", customerController.ReserveSeat)
+				customerReservationManagement.GET("/list", customerController.MyReserveList)
+				customerReservationManagement.PUT("/change_status", customerController.ChnageStatus)
+				customerReservationManagement.GET("/history", customerController.History)
+			}
 		}
 		admin := apiRouter.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
@@ -97,7 +99,7 @@ func RoutersSetup() *gin.Engine {
 		}
 		public := apiRouter.Group("/public")
 		{
-			public.GET("/bus_list",publicController.BusList)
+			public.GET("/bus_list", publicController.BusList)
 		}
 	}
 	return router

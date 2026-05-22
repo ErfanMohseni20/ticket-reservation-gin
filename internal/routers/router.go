@@ -4,6 +4,7 @@ import (
 	adminController "github.com/ErfanMohseni20/ticket-reservation-gin/internal/controllers/Admin"
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/controllers/Auth"
 	customerController "github.com/ErfanMohseni20/ticket-reservation-gin/internal/controllers/Customer"
+	publicController "github.com/ErfanMohseni20/ticket-reservation-gin/internal/controllers/Public"
 	middleware "github.com/ErfanMohseni20/ticket-reservation-gin/internal/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -34,8 +35,15 @@ func RoutersSetup() *gin.Engine {
 			customerTicketManagment.GET("/:id", customerController.TicketShow)
 			customerTicketManagment.POST("/:id/reply", customerController.TicketReply)
 		}
+		customerReservationManagement := customer.Group("/reserve")
+		{
+
+			customerReservationManagement.POST("/seat",customerController.ReserveSeat)
+			customerReservationManagement.GET("/list",customerController.MyReserveList)
+			customerReservationManagement.PUT("/change_status",customerController.ChnageStatus)
+		}
 		admin := apiRouter.Group("/admin")
-		// admin.Use(middleware.AuthMiddleware())
+		admin.Use(middleware.AuthMiddleware())
 		{
 			admin.GET("/dashboard", adminController.Dashboard)
 			adminUserManagment := admin.Group("/users")
@@ -85,6 +93,10 @@ func RoutersSetup() *gin.Engine {
 				adminTicketManagement.POST("/:id/close", adminController.TicketClose)
 				adminTicketManagement.POST("/:id/reply", adminController.TicketReply)
 			}
+		}
+		public := apiRouter.Group("/public")
+		{
+			public.GET("/bus_list",publicController.BusList)
 		}
 	}
 	return router

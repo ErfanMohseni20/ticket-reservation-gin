@@ -3,6 +3,7 @@ package customer
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ErfanMohseni20/ticket-reservation-gin/internal/database"
@@ -43,10 +44,10 @@ func ReserveSeat(c *gin.Context) {
 		}
 
 		newReservation := models.SeatReservation{
-			BusID:     bus.ID,
-			BusSeatID: availableSeat.ID,
-			UserID:    claims.UserID,
-			Status:    "reserved",
+			BusID:      bus.ID,
+			BusSeatID:  availableSeat.ID,
+			UserID:     claims.UserID,
+			Status:     "reserved",
 			ReservedAt: time.Now(),
 		}
 		if err := tx.Create(&newReservation).Error; err != nil {
@@ -119,12 +120,57 @@ func ChnageStatus(c *gin.Context) {
 		Reserve.Status = "purchased"
 		Reserve.PurchasedAt = time.Now()
 	}
-	if (ReserveChangeStatus.Status == "canceled" ){
+	if ReserveChangeStatus.Status == "canceled" {
 		Reserve.Status = "canceled"
 	}
-	if err := database.DB.Save(&Reserve).Error;err != nil {
-		c.JSON(http.StatusInternalServerError,gin.H{"message" : "failed to update reserve record"})
+	if err := database.DB.Save(&Reserve).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update reserve record"})
 		return
 	}
-	c.JSON(http.StatusOK,gin.H{"message" : "record updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "record updated successfully"})
+}
+func History(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	perPageStr := c.DefaultQuery("per_page", "15")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	perPage, err := strconv.Atoi(perPageStr)
+	if err != nil || perPage < 1 || perPage > 100 {
+		perPage = 15
+	}
+	offset := (page - 1) * perPage
+	cliams := helpers.MustGetUserFromContext(c)
+	var reservations []models.SeatReservation
+	if err := database.DB.Preload("Bus.Route.OriginTerminal").
+		Preload("Bus.Route.DestinationTerminal").Model(&reservations).Limit(perPage).Offset(offset).Where("user_id = ? and status = ?", cliams.UserID, "purchased").Find(&reservations).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "there aren't any record for you"})
+		return
+	}
+	var total int64
+	database.DB.Model(&models.SeatReservation{}).Count(&total)
+	var responseList []response.ReservationHistory
+	for _, counter := range reservations {
+		responseList = append(responseList, response.ReservationHistory{
+			ID:                      counter.ID,
+			OriginTerminalName:      counter.Bus.Route.OriginTerminal.Name,
+			DestinationTerminalName: counter.Bus.Route.DestinationTerminal.Name,
+			Status:                  counter.Status,
+			ReservedAt:              counter.ReservedAt.Format("2006-01-02 15:04:05"),
+			PurchasedAt:             counter.PurchasedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	totalPages := int((total + int64(perPage) - 1) / int64(perPage))
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": responseList,
+		"pagination": gin.H{
+			"current_page": page,
+			"per_page":     perPage,
+			"total":        total,
+			"total_pages":  totalPages,
+		},
+	})
 }

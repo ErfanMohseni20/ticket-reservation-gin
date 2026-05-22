@@ -41,6 +41,7 @@ func RoutersSetup() *gin.Engine {
 			customerReservationManagement.POST("/seat",customerController.ReserveSeat)
 			customerReservationManagement.GET("/list",customerController.MyReserveList)
 			customerReservationManagement.PUT("/change_status",customerController.ChnageStatus)
+			customerReservationManagement.GET("/history",customerController.History)
 		}
 		admin := apiRouter.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())

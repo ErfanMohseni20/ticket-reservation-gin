@@ -47,7 +47,7 @@ func ReserveSeat(c *gin.Context) {
 			BusID:      bus.ID,
 			BusSeatID:  availableSeat.ID,
 			UserID:     claims.UserID,
-			Status:     "reserved",
+			Status:     models.SeatReserved,
 			ReservedAt: time.Now(),
 		}
 		if err := tx.Create(&newReservation).Error; err != nil {
@@ -81,7 +81,7 @@ func ReserveSeat(c *gin.Context) {
 			ID:         reservation.ID,
 			BusID:      reservation.BusID,
 			SeatNumber: seat.SeatNumber,
-			Status:     reservation.Status,
+			Status:     string(reservation.Status),
 			ReservedAt: reservation.ReservedAt.Format("2006-01-02 15:04:05"),
 		}})
 }
@@ -98,36 +98,53 @@ func MyReserveList(c *gin.Context) {
 			ID:         reservation.ID,
 			BusID:      reservation.BusID,
 			SeatNumber: reservation.BusSeat.SeatNumber,
-			Status:     reservation.Status,
+			Status:     string(reservation.Status),
 			ReservedAt: reservation.ReservedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "data fetched successfully", "data": responseList})
 }
-func ChnageStatus(c *gin.Context) {
+func ChangeStatus(c *gin.Context) {
 	claims := helpers.MustGetUserFromContext(c)
-	var ReserveChangeStatus request.ReserveChangeStatus
-	if err := c.ShouldBindJSON(&ReserveChangeStatus); err != nil {
+	var req request.ReserveChangeStatus
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var Reserve models.SeatReservation
-	if err := database.DB.Model(&Reserve).Where("id = ? and user_id = ? and status = ?", ReserveChangeStatus.ReserveID, claims.UserID, "reserved").First(&Reserve).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("reserve id %v not found or not blong to you or something else ", ReserveChangeStatus.ReserveID)})
+
+	allowed := map[models.SeatReservationStatus]bool{
+		models.SeatPurchased: true,
+		models.SeatCanceled:  true,
+	}
+	if !allowed[models.SeatReservationStatus(req.Status)] {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid status"})
 		return
 	}
-	if ReserveChangeStatus.Status == "purchased" {
-		Reserve.Status = "purchased"
-		Reserve.PurchasedAt = time.Now()
-	}
-	if ReserveChangeStatus.Status == "canceled" {
-		Reserve.Status = "canceled"
-	}
-	if err := database.DB.Save(&Reserve).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update reserve record"})
+
+	var reserve models.SeatReservation
+	if err := database.DB.
+		Where("id = ? AND user_id = ? AND status = ?", 
+			req.ReserveID, 
+			claims.UserID, 
+			models.SeatReserved).
+		First(&reserve).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "reservation not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "record updated successfully"})
+
+	reserve.Status = models.SeatReservationStatus(req.Status)
+	
+	if reserve.Status == models.SeatPurchased {
+		reserve.PurchasedAt = time.Now() 
+	}
+
+	if err := database.DB.Save(&reserve).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "status updated successfully"})
 }
 func History(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
@@ -145,7 +162,7 @@ func History(c *gin.Context) {
 	cliams := helpers.MustGetUserFromContext(c)
 	var reservations []models.SeatReservation
 	if err := database.DB.Preload("Bus.Route.OriginTerminal").
-		Preload("Bus.Route.DestinationTerminal").Model(&reservations).Limit(perPage).Offset(offset).Where("user_id = ? and status = ?", cliams.UserID, "purchased").Find(&reservations).Error; err != nil {
+		Preload("Bus.Route.DestinationTerminal").Model(&reservations).Limit(perPage).Offset(offset).Where("user_id = ? and status = ?", cliams.UserID, models.SeatReserved).Find(&reservations).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "there aren't any record for you"})
 		return
 	}
@@ -157,7 +174,7 @@ func History(c *gin.Context) {
 			ID:                      counter.ID,
 			OriginTerminalName:      counter.Bus.Route.OriginTerminal.Name,
 			DestinationTerminalName: counter.Bus.Route.DestinationTerminal.Name,
-			Status:                  counter.Status,
+			Status:                  string(counter.Status),
 			ReservedAt:              counter.ReservedAt.Format("2006-01-02 15:04:05"),
 			PurchasedAt:             counter.PurchasedAt.Format("2006-01-02 15:04:05"),
 		})
